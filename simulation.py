@@ -26,7 +26,7 @@ def get_length(vertices):
 def gimmi_a_fish_angled(theta, E_distance, scale):
     fish_vertices = np.array([[-8.5, 0, 0], [-2.5, 4, 0], [-2.5, -4, 0],  [6.5, 0, 0], [8.5,3,0], [8.5, -3, 0]], dtype=float)
     # scaling
-    fish_vertices[:,0:2] = fish_vertices[:,0:2]*scale
+    fish_vertices *= scale
 
     # rotation
     c = np.cos(theta)
@@ -50,9 +50,11 @@ def main():
     S2 = 1.08*1.92/(3.5/320)**2
     h = 300
     V = (S1 + S2 + (S1*S2)**0.5)*(h/3)
+    
     # Thus, we get the following expected distance using expected value integral
     E_distance = (1/V) * (1.08*1.92)/(3.5*3.5) * 0.25 * (320**4 - 20**3) # Calculation of expected value integral
-    E_distance -= 20
+    E_distance -= 20 # convert it to coordinate in global frame
+
     # Also, we note our projection matrix
     extrinsic = np.array([[1, 0, 0, -150], [0, 1, 0, -150], [0, 0, 1, 20]])
     intrinsic = np.array([[3.5, 0, 0], [0, 3.5, 0], [0, 0, 1]])
@@ -62,7 +64,7 @@ def main():
     # We now have to make a chart of: scale of fish vs average projected size at expected distance across 360 degree of rotation
     # for each scale, we rotate the fish 360 degree at different at expected distance, then record the result 
     # we do this since it is challenging to calculate the expected size and shape in closed form, this is left as future work of the algorithm I'm designing)
-    
+   
     expected_size = []
     expected_length = []
     scales = np.arange(0.5, 1.6, 0.1)
@@ -81,23 +83,24 @@ def main():
             projected = rearrange(projected, 'a b -> b a')
             projected[:,0] = np.divide(projected[:,0], projected[:,2])
             projected[:,1] = np.divide(projected[:,1], projected[:,2])
-            total_area += get_area(projected[0:4,:])
+
+            # Now we calculate the observations
+            total_area += get_area(projected[0:3,:])
+            total_area += get_area(projected[1:4,:])
             total_area += get_area(projected[3:6,:])
             total_length += get_length(projected)
 
         expected_size.append(total_area / 360)
         expected_length.append(total_length/360)
 
-
     ################################################
     ### Now we run our simulation
-    ### You can adjust fish scale here:
-    SCALE = 1.1
-
-
+    ### You can adjust fish scale (from 0.5 to 1.5) here:
+    SCALE = 1
     lengths = []
     sizes = []
-    for _ in range(200):
+
+    for _ in range(100):
         a, _ = gimmi_many_fish(100, SCALE)
         # projecting fishes into image frame:
         temp = np.ones((len(a), 1))
@@ -106,9 +109,9 @@ def main():
         a = np.vstack((a, temp))
         projected = projection@a
         projected = rearrange(projected, 'a b -> b a')
-        projected[:,0] = np.divide(projected[:,0], projected[:,2])
+        projected[:,0] = np.divide(projected[:,0], projected[:,2])    # divide by homogenous coordinate
         projected[:,1] = np.divide(projected[:,1], projected[:,2])
-        projected[:,2] = -16.5
+        projected[:,2] = 1
 
         # trim "fishes" that are not entirely within the iamge frame
         im_vertices = projected[:,0:2]
@@ -122,6 +125,7 @@ def main():
 
             if x_check < 0.96 and y_check < 0.54:
                 in_frame_vertices.append(coords)
+
         in_frame_vertices = np.array(in_frame_vertices)
 
         # calculate area and length of each fish, then take average
@@ -129,46 +133,46 @@ def main():
         total_size = 0
         total_length = 0
         for vertices in in_frame_vertices:
-            total_size += get_area(vertices[0:4,:])
+            total_size += get_area(vertices[0:3,:])
+            total_size += get_area(vertices[1:4,:])
             total_size += get_area(vertices[3:6,:])
             total_length += get_length(vertices)
 
         if num_fish != 0:
-            average_length = total_length/num_fish
             average_size = total_size/num_fish
+            average_length = total_length/num_fish
             lengths.append(average_length)
             sizes.append(average_size)
-
         elif num_fish == 0:
             pass
-
-
+    
     # Lookup index for closest observed length and estimated length, as well as size
     observed_length = np.average(lengths)
     observed_size = np.average(sizes)
+  
     length_idx = (np.abs(expected_length - observed_length)).argmin()
     size_idx = (np.abs(expected_size - observed_size)).argmin()
     length_scale = scales[length_idx]
     size_scale = scales[size_idx]
-
+    
     # Which gives the following estimated fish size:
     fish_vertices = np.array([[-8.5, 0, 0], [-2.5, 4, 0], [-2.5, -4, 0],  [6.5, 0, 0], [8.5,3,0], [8.5, -3, 0]], dtype=float)
     fish_vertices_l = fish_vertices*length_scale
     length_guess = get_length(fish_vertices_l)
     fish_vertices_s = fish_vertices*size_scale
-    size_guess = get_area(fish_vertices_s[0:4,:]) + get_area(fish_vertices_s[3:6,:])
+    size_guess = get_area(fish_vertices_s[0:3,:]) + get_area(fish_vertices_s[1:4,:]) + get_area(fish_vertices_s[3:6,:])
     
     # meanwhile, the actual size and length are:
     fish_vertices_actual = fish_vertices * SCALE
     length_actual = get_length(fish_vertices_actual)
-    size_actual = get_area(fish_vertices_actual[0:4,:]) + get_area(fish_vertices_actual[3:6,:])
+    size_actual = get_area(fish_vertices_actual[0:3,:]) + get_area(fish_vertices_actual[1:4,:]) + get_area(fish_vertices_actual[3:6,:])
 
     # Print our guess!
     print("****")
-    print("Actual mean length of fishes: {0}".format(length_actual))
-    print("Actual mean size (area) of fishes: {0}".format(size_actual))
     print("Estimated fish length: {0}".format(length_guess))
     print("Estimated fish size (area): {0}".format(size_guess))
+    print("Actual mean length of fishes: {0}".format(length_actual))
+    print("Actual mean size (area) of fishes: {0}".format(size_actual))
 
     
 

@@ -95,27 +95,24 @@ def main():
     extrinsic = np.array([[1, 0, 0, -150], [0, 1, 0, -150], [0, 0, 1, 20]])
     intrinsic = np.array([[3.5, 0, 0], [0, 3.5, 0], [0, 0, 1]])
     projection = intrinsic@extrinsic
-
     # adding a row of ones to a so that we have homogenous coordinates of vertices of fishes
     temp = np.ones((len(a), 1))
     a = rearrange(a, 'a b -> b a')
     temp = rearrange(temp, 'a b -> b a')
     a = np.vstack((a, temp))
-
     # Apply projection matrix, and divided by homogenous constant, to make the "third value" 1
     projected = projection@a
     projected = rearrange(projected, 'a b -> b a')
     projected[:,0] = np.divide(projected[:,0], projected[:,2])
     projected[:,1] = np.divide(projected[:,1], projected[:,2])
-    # don't really need to set this value actually, but for sake of completeness, choosign z axis as -16.5 will be the actual location of the sensor
-    projected[:,2] = -16.5  
-
+    # don't really need to set this value actually, but for sake of completeness, choosign z axis as -20+3.5=-16.5 will be the actual location of the sensor
+    projected[:,2] = -16.6  
+    
     # Create the mesh
     mesh = trimesh.Trimesh(vertices=projected, faces=b, process = False)
 
     # Draw field of view
     ray_visualizations = []
-
 
     # Ray origins and directions
     ray_origins = np.array([
