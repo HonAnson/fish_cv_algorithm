@@ -9,17 +9,17 @@ from einops import rearrange
 # Define vertices and triangles for a single fish
 # actual size of the fish: 17cm long * 8 cm height
 
-def gimmi_a_fish():
+def gimmi_a_fish(mean_scale = 1):
     fish_vertices = np.array([[0, 0, 0], [6, 4, 0], [6, -4, 0],  [15, 0, 0], [17,3,0], [17, -3, 0]], dtype=float)
     fish_faces = np.array([[0, 2, 1], [1, 3, 2], [3, 5, 4], [0, 1, 2], [1, 2, 3], [3, 4, 5]])
 
     # now we randomly scale and rotate (about the y axis) the fish
     # random variables
-    scale = random.normal()*0.5+1   #normal distribution 
+    scale = random.normal()*0.5 + mean_scale   #normal distribution 
     theta = 2*np.pi*random.rand()
     
     # scaling
-    fish_vertices[:,0:2] = fish_vertices[:,0:2]*scale
+    fish_vertices *= scale
 
     # rotation
     c = np.cos(theta)
@@ -36,10 +36,10 @@ def gimmi_a_fish():
     return fish_vertices, fish_faces
 
 
-def gimmi_many_fish(numb):
-    a, b = gimmi_a_fish()
+def gimmi_many_fish(numb, mean_scale = 1):
+    a, b = gimmi_a_fish(mean_scale)
     for i in range(numb-1):
-        vertices, faces = gimmi_a_fish()
+        vertices, faces = gimmi_a_fish(mean_scale)
         faces = faces + 6*(i+1)
         a = np.vstack((a, vertices))
         b = np.vstack((b, faces))
