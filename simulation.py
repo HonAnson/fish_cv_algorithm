@@ -45,21 +45,26 @@ def gimmi_a_fish_angled(theta, E_distance, scale):
 
 
 def main():
-    # # First, note volume of the field of view:
-    # S1 = 1.08*1.92/(3.5/20)**2
-    # S2 = 1.08*1.92/(3.5/320)**2
-    # h = 300
-    # V = (S1 + S2 + (S1*S2)**0.5)*(h/3)
-    
+    # First, note volume of the field of view:
+    S1 = 1.08*1.92/(3.5/20)**2
+    S2 = 1.08*1.92/(3.5/320)**2
+    h = 300
+    V = (S1 + S2 + (S1*S2)**0.5)*(h/3)
+    # We then calculate the probability weight for each 30cm interval in fov depth
+    for i in range(10):
+        s1 = 1.08*1.92/(3.5/30*i+20)**2
+        s2 = 1.08*1.92/(3.5/30*i+20)**2
+        h = 30
+        little_v = (s1 + s2 + (s1*s2)**0.5)*(h/3)
+        weight += [little_v / (V*10)]*10
+
     # # Thus, we get the following expected distance using expected value integral
     # E_distance = (1/V) * (1.08*1.92)/(3.5*3.5) * 0.25 * (320**4 - 20**3) # Calculation of expected value integral
     # E_distance -= 20 # convert it to coordinate in global frame
-
     # Also, we note our projection matrix
     extrinsic = np.array([[1, 0, 0, -150], [0, 1, 0, -150], [0, 0, 1, 20]])
     intrinsic = np.array([[3.5, 0, 0], [0, 3.5, 0], [0, 0, 1]])
     projection = intrinsic@extrinsic
-
 
     # We now have to make a chart of: scale of fish vs average projected size at expected distance across 360 degree of rotation
     # for each scale, we rotate the fish 360 degree at different at expected distance, then record the result 
@@ -68,13 +73,15 @@ def main():
     expected_size = []
     expected_length = []
     scales = np.arange(0.5, 1.6, 0.1)
+
+
     for scale in scales:
         total_area = 0
         total_length = 0
-        for j in range(11):
+        for j in range(10):     # along depth
+            distance = j*30
             for i in range(10):
                 theta = 2* np.pi * (i*36 / 360)       # rotating fish from 0 to 360 degree
-                distance = j*30
                 vertices = gimmi_a_fish_angled(theta, distance, scale)
                 # project it onto the frame
                 temp = np.ones((len(vertices), 1))
@@ -92,8 +99,8 @@ def main():
                 total_area += get_area(projected[3:6,:])
                 total_length += get_length(projected) 
 
-        expected_size.append(total_area / 110)          # TODO: can't directly divide by 110, have to adjust for probability work on it tomor
-        expected_length.append(total_length/110)
+        expected_size.append(total_area / 100)          # TODO: can't directly divide by 110, have to adjust for probability work on it tomor
+        expected_length.append(total_length/100)
 
     ################################################
     ### Now we run our simulation
