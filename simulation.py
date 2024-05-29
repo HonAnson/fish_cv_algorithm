@@ -23,7 +23,7 @@ def get_length(vertices):
 
 
 # function for helping to calculate the corrsponding length and size of fish given average length and size of fish in image
-def gimmi_a_fish_angled(theta, E_distance, scale):
+def gimmi_a_fish_angled(theta, z_translate, scale):
     fish_vertices = np.array([[-8.5, 0, 0], [-2.5, 4, 0], [-2.5, -4, 0],  [6.5, 0, 0], [8.5,3,0], [8.5, -3, 0]], dtype=float)
     # scaling
     fish_vertices *= scale
@@ -37,7 +37,7 @@ def gimmi_a_fish_angled(theta, E_distance, scale):
     fish_vertices = rearrange(fish_vertices, 'a b -> b a')
 
     # translation
-    translation = np.array([150, 150, E_distance])
+    translation = np.array([150, 150, z_translate])
     translation = np.tile(translation,(len(fish_vertices),1))
     fish_vertices = fish_vertices + translation
     return fish_vertices
@@ -51,9 +51,10 @@ def main():
     h = 300
     V = (S1 + S2 + (S1*S2)**0.5)*(h/3)
     # We then calculate the probability weight for each 30cm interval in fov depth
+    weight = []
     for i in range(10):
-        s1 = 1.08*1.92/(3.5/30*i+20)**2
-        s2 = 1.08*1.92/(3.5/30*i+20)**2
+        s1 = 1.08*1.92/(3.5/(30*i+20))**2
+        s2 = 1.08*1.92/(3.5/(30*i+20))**2
         h = 30
         little_v = (s1 + s2 + (s1*s2)**0.5)*(h/3)
         weight += [little_v / (V*10)]*10
@@ -76,16 +77,17 @@ def main():
 
 
     for scale in scales:
-        total_area = 0
-        total_length = 0
+        all_area = []
+        all_length = []
+        
         for j in range(10):     # along depth
             distance = j*30
             for i in range(10):
-                theta = 2* np.pi * (i*36 / 360)       # rotating fish from 0 to 360 degree
+                theta = 2*np.pi*(i*36 / 360)       # rotating fish from 0 to 360 degree
                 vertices = gimmi_a_fish_angled(theta, distance, scale)
                 # project it onto the frame
                 temp = np.ones((len(vertices), 1))
-                vertices = rearrange(vertices, 'a b -> b a')
+                vertices = rearrange(vertices, 'a b -> b a')            #can work around transposes here
                 temp = rearrange(temp, 'a b -> b a')
                 vertices = np.vstack((vertices, temp))
                 projected = projection@vertices
@@ -94,18 +96,20 @@ def main():
                 projected[:,1] = np.divide(projected[:,1], projected[:,2])
 
                 # Now we calculate the observations
-                total_area += get_area(projected[0:3,:])
-                total_area += get_area(projected[1:4,:])
-                total_area += get_area(projected[3:6,:])
-                total_length += get_length(projected) 
+                temp = 0
+                temp += get_area(projected[0:3,:])
+                temp += get_area(projected[1:4,:])
+                temp += get_area(projected[3:6,:])
+                all_area.append(temp)
+                all_length.append(get_length(projected)) 
 
-        expected_size.append(total_area / 100)          # TODO: can't directly divide by 110, have to adjust for probability work on it tomor
-        expected_length.append(total_length/100)
+        expected_size.append(np.inner(all_area, weight))          # TODO: can't directly divide by 110, have to adjust for probability work on it tomor
+        expected_length.append(np.inner(all_length, weight))
 
     ################################################
     ### Now we run our simulation
     ### You can adjust fish scale (from 0.5 to 1.5) here:
-    SCALE = 1
+    SCALE = 0.7
     lengths = []
     sizes = []
 
@@ -178,10 +182,10 @@ def main():
 
     # Print our guess!
     print("****")
-    print("Estimated fish length: {0}".format(length_guess))
-    print("Estimated fish size (area): {0}".format(size_guess))
-    print("Actual mean length of fishes: {0}".format(length_actual))
-    print("Actual mean size (area) of fishes: {0}".format(size_actual))
+    print("Estimated fish length: {0}".format(np.round(length_guess,3)))
+    print("Estimated fish size (area): {0}".format(np.round(size_guess,3)))
+    print("Actual mean length of fishes: {0}".format(np.round(length_actual)))
+    print("Actual mean size (area) of fishes: {0}".format(np.round(size_actual)))
 
     
 
