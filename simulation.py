@@ -66,10 +66,11 @@ def main():
     extrinsic = np.array([[1, 0, 0, -150], [0, 1, 0, -150], [0, 0, 1, 20]])
     intrinsic = np.array([[3.5, 0, 0], [0, 3.5, 0], [0, 0, 1]])
     projection = intrinsic@extrinsic
+    projection_t = rearrange(projection, 'a b -> b a')
 
-    # We now have to make a chart of: scale of fish vs average projected size at expected distance across 360 degree of rotation
-    # for each scale, we rotate the fish 360 degree at different at expected distance, then record the result 
-    # we do this since it is challenging to calculate the expected size and shape in closed form, this is left as future work of the algorithm I'm designing)
+    # We now have to make a list (or dictionary) of: scale of fish vs average projected size at expected distance across 360 degree of rotation
+    # for each scale, we rotate the fish 360 degree at different distances, then record the result 
+    # we do this since it is challenging to calculate the expected size and shape in closed form, this is left as future work of the algorithm I'm designing
    
     expected_size = []
     expected_length = []
@@ -87,11 +88,8 @@ def main():
                 vertices = gimmi_a_fish_angled(theta, distance, scale)
                 # project it onto the frame
                 temp = np.ones((len(vertices), 1))
-                vertices = rearrange(vertices, 'a b -> b a')            #can work around transposes here
-                temp = rearrange(temp, 'a b -> b a')
-                vertices = np.vstack((vertices, temp))
-                projected = projection@vertices
-                projected = rearrange(projected, 'a b -> b a')
+                vertices = np.hstack((vertices, temp))
+                projected = vertices@projection_t
                 projected[:,0] = np.divide(projected[:,0], projected[:,2])
                 projected[:,1] = np.divide(projected[:,1], projected[:,2])
 
@@ -103,25 +101,22 @@ def main():
                 all_area.append(temp)
                 all_length.append(get_length(projected)) 
 
-        expected_size.append(np.inner(all_area, weight))          # TODO: can't directly divide by 110, have to adjust for probability work on it tomor
+        expected_size.append(np.inner(all_area, weight))          
         expected_length.append(np.inner(all_length, weight))
 
     ################################################
     ### Now we run our simulation
     ### You can adjust fish scale (from 0.5 to 1.5) here:
-    SCALE = 0.7
+    SCALE = 1
     lengths = []
     sizes = []
-
+    
     for _ in range(100):
         a, _ = gimmi_many_fish(100, SCALE)
         # projecting fishes into image frame:
         temp = np.ones((len(a), 1))
-        temp = rearrange(temp, 'a b -> b a')
-        a = rearrange(a, 'a b -> b a')
-        a = np.vstack((a, temp))
-        projected = projection@a
-        projected = rearrange(projected, 'a b -> b a')
+        a = np.hstack((a, temp))
+        projected = a@projection_t
         projected[:,0] = np.divide(projected[:,0], projected[:,2])    # divide by homogenous coordinate
         projected[:,1] = np.divide(projected[:,1], projected[:,2])
         projected[:,2] = 1
@@ -135,7 +130,6 @@ def main():
             y_coords = coords[:, 1]
             x_check = np.max(np.absolute(x_coords))
             y_check = np.max(np.absolute(y_coords))
-
             if x_check < 0.96 and y_check < 0.54:
                 in_frame_vertices.append(coords)
 
@@ -186,8 +180,6 @@ def main():
     print("Estimated fish size (area): {0}".format(np.round(size_guess,3)))
     print("Actual mean length of fishes: {0}".format(np.round(length_actual)))
     print("Actual mean size (area) of fishes: {0}".format(np.round(size_actual)))
-
-    
 
 if __name__ == "__main__":
     main()
