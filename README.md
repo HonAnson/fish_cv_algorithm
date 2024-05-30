@@ -31,12 +31,16 @@ Imageine you are given a fish recgonition computer vision model, which can effec
 
 
 
-Let's simplify the problem a little bit. We assume the following:
+Let's simplify the problem a little bit. Assuming the following:  
+
+Chosen assumptions:
 - A 3mx3mx3m fish tank
 - 100 fishes in the tank
-- camera modelled with projective camera model.
+- camera modelled with projective camera model
+
+Necessary assumptions:
 - Near plane and far plane of the camera can be estimated and are constant
-- Location of fishes are uniformly distribted in the tank
+- Location of fishes are uniformly distribted in the tank at a randomly selected time
 - Size of fishes follows normal distribution, our goal is to estimate the mean of the distribution
 - Fishes rotates randomly
 
@@ -66,41 +70,70 @@ Can we recover the mean fish size using many measurement of fish size in image?
 
 Which I believe is possible with the given assumptions.  
 
-First, consider expected depth in camera frame given the that the fish is seen, in fact, the probability is the volume of the small frustum divided by the bigger frustum. 
+First, consider distribution of depth in camera frame given the that the fish is seen. In fact, the probability of fish at a certain depth is the volume of the small (red) frustum divided by the bigger (blue) frustum:
 
+<img src="images/depth.png" alt="depth" width="400"/>
 
-<Include drawing of the frustum thing>
+Volume of frustum is given by the following formula:
+$$ V = (S1 + S2 + (S1\cdot{}S2)^\frac{1}{2})*(\frac{h}{3})$$
+
+Where S1 and S2 are area of the two bases of the frustum, and h is height of the frustum.
 
 What about rotation of the fishes? Let's think deeper about rotation of fishes. If we have a camera viewing a fish as shown in following figure, actually only angle $\theta$ affect the measured size.
 
 
+<img src="images/rotation.png" alt="rotation" width="500"/>
 
-Which we can simplify the estimation:
+Which we can simplify the estimation signfiicantly. I chose to numerically compute the expected size of fish at a depth rotated, as it raises some complicated arithmetics.
 
-
-
-Sadly, have chose to numerically compute the expected size of fish at a depth rotated, as it raises some complicated arithmetics (shown in discussoin).
-
-Which gives the following routine to obtain 
+To summarise:
+1. Estimate near plane and far plane of the camera
+2. Calculate the probability distribution of fish at different of depth
+3. At each depth, compute projected size of the fish in image, rotated from 0 to $2\pi$, average them.
+4. For each angle averaged size at each depth, multiply it by the probability calculated in step 2.
+5. Repeat step 2 to 4 with different chosen fish size, record the expected projected size.
+6. By taking many image measurement, calculate the average projected fish length. 
+7. Lookup the expected sizes given in step 5, find its corrsponding chosen fish size, this is our estimation.
 
 
 
 ### Discussion
+#### Performance
+We compare estimated size with actual size, with different scaling input. In general, length is better estimated compare to size. It is also observed that both length and area are underestimated. 
 
-- Occolution
-- Consider AI fail rate (angle wise and distance wise)
+
+<img src="images/length_plot.png" alt="depth" width="400"/>
+
+<img src="images/size_plot.png" alt="depth" width="400"/>
+
+
+Considering estimation vs number of images, one could see that the estimation converges quickly.
+
+<img src="images/length_vs_trial.png" alt="length vs trial" width="400"/>
+<img src="images/size_vs_trial.png" alt="depth vs trial" width="400"/>
+
+
+
+Heres why there is a bias (under estimation) in our estimation - because I only include fishes that are entirely within the frame. Fishes that are closer to the camera are less likely to be included, while further to the camera, fishes are little less like to be included only. This leading to an underestimation of fish sizes, in particular, this issue in our simulation raises as fish actual size increases.
+
+<!-- 
+#### Numerical vs Analytical
+Lets also see why I chose to numerically figure expected size of a fish when rotated randomly at a certain depth. Consider the followign 2d case: -->
+
+
+
+
 
 
 
 ### Future work
 
+- Taking things one step further, we can consider occolution. As we know the number of fish and volume of the tank, probability of a fish being blocked is given by:
+$$P(blocked) = \rho{}_f \cdot{} V $$
 
 
 
-
-
-
-
+- As you can see in the demo gif, fish at extreme angle couldn't be measured. This can be included into the simulation by dropping extreme angles.
 
 
 
