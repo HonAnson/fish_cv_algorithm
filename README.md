@@ -1,4 +1,4 @@
-## Stoiachastic Fish Size Estimation Computer Vision Algorithm
+## Stochastic Fish Size Estimation Computer Vision Algorithm
 
 ### Introduction
 Measuring size of object is a challenging task in computer vision. Typical methods include obtaining depth data or using reference object. Specifically, thaere have been machine learning models developed for fish size recgonition based on bio-features of fishes [1].  
