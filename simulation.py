@@ -139,19 +139,19 @@ def main():
         num_fish = len(in_frame_vertices)
         total_size = 0
         total_length = 0
+        if num_fish == 0:
+            pass
+
         for vertices in in_frame_vertices:
             total_size += getArea(vertices[0:3,:])
             total_size += getArea(vertices[1:4,:])
             total_size += getArea(vertices[3:6,:])
             total_length += getLength(vertices)
-
         if num_fish != 0:
             average_size = total_size/num_fish
             average_length = total_length/num_fish
             lengths.append(average_length)
             sizes.append(average_size)
-        elif num_fish == 0:
-            pass
     
     # Lookup index for closest observed length and estimated length, as well as size
     observed_length = np.average(lengths)
