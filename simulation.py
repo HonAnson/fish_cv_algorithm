@@ -44,7 +44,7 @@ def gimmiAFishAngled(theta, z_translate, scale):
 
 
 
-def main():
+def runSimulation(SCALE, NUM_FISH, NUM_OBSERVATION):
     # Calculate volume of the field of view (NOTE: formula for frustum)
     S1 = 1.08*1.92/(3.5/20)**2
     S2 = 1.08*1.92/(3.5/320)**2
@@ -107,12 +107,11 @@ def main():
     ################################################
     ### Run simulation
     ### You can adjust fish scale (from 0.5 to 1.5) here:
-    SCALE = 1
     lengths = []
     sizes = []
     
-    for _ in range(100):
-        a, _ = gimmiManyFish(100, SCALE)
+    for _ in range(NUM_OBSERVATION):
+        a, _ = gimmiManyFish(NUM_FISH, SCALE)
         # projecting fishes into image frame:
         temp = np.ones((len(a), 1))
         a = np.hstack((a, temp))
@@ -136,20 +135,19 @@ def main():
         in_frame_vertices = np.array(in_frame_vertices)
 
         # calculate area and length of each fish, then take average
-        num_fish = len(in_frame_vertices)
+        num_fish_observed = len(in_frame_vertices)
         total_size = 0
         total_length = 0
-        if num_fish == 0:
+        if num_fish_observed == 0:
             pass
-
         for vertices in in_frame_vertices:
             total_size += getArea(vertices[0:3,:])
             total_size += getArea(vertices[1:4,:])
             total_size += getArea(vertices[3:6,:])
             total_length += getLength(vertices)
-        if num_fish != 0:
-            average_size = total_size/num_fish
-            average_length = total_length/num_fish
+        if num_fish_observed != 0:
+            average_size = total_size/num_fish_observed
+            average_length = total_length/num_fish_observed
             lengths.append(average_length)
             sizes.append(average_size)
     
@@ -182,4 +180,11 @@ def main():
     print("Actual mean size (area) of fishes: {0}".format(np.round(size_actual)))
 
 if __name__ == "__main__":
-    main()
+    ###########################
+    ## Simulation Parameters ##
+    ###########################
+    SCALE = 1     # choose between 0.5 to 1.5
+    NUM_FISH = 100
+    NUM_OBSERVATION = 100
+    ###########################
+    runSimulation(SCALE, NUM_FISH, NUM_OBSERVATION)
