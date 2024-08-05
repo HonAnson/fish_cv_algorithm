@@ -22,7 +22,6 @@ If you see something like the following in the projected visualization, its prob
 <img src="images/extreme_fish.png" alt="extreme" width="350"/>
 
 
----
 ### Problem Modelling & Assumptions
 
 Imageine you are given a fish recgonition computer vision model, which can effectively identify geomatery of fishes for a given image, as shown in figure below. How could we then estimate size of fishes in a fish farm? 
@@ -63,10 +62,10 @@ The projection onto the camera will be:
 
 ### The algorithm
 
-Now I introduce the algorithm, which is simply the answer to the following question:
-```
-Can we recover the mean fish size using many measurement of fish size in image?
-```
+Now I introduce the algorithm, which is simply the answer to the following question:  
+
+__Can we recover the mean fish size using many measurement of fish size in image?__
+
 
 Which I believe is possible with the given assumptions.  
 
@@ -101,9 +100,7 @@ To summarise:
 #### Performance
 We compare estimated size with actual size, with different scaling input. In general, length is better estimated compare to size. It is also observed that both length and area are underestimated. 
 
-
 <img src="images/length_plot.png" alt="depth" width="400"/>
-
 <img src="images/size_plot.png" alt="depth" width="400"/>
 
 
@@ -131,10 +128,12 @@ Lets also see why I chose to numerically figure expected size of a fish when rot
 - Taking things one step further, we can consider occolution. As we know the number of fish and volume of the tank, probability of a fish being blocked is given by:
 $$P(blocked) = \rho{}_f \cdot{} V $$
 
+Where $\rho{}$ is number of fish divided by tank volume. V is the volume formed between near plane and the fish.
 
 
-- As you can see in the demo gif, fish at extreme angle couldn't be measured. This can be included into the simulation by dropping extreme angles.
+- As you can see in the demo gif, fish at extreme angle couldn't be measured. This can be included into the simulation by dropping extreme angles when caculating the expected fish size from rotation.
 
+- The current method provides an approximatoin of the fish size, while future work can extend size predictions to more objects
 
 
 

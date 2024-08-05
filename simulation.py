@@ -2,11 +2,11 @@ import numpy as np
 from numpy import random
 import trimesh
 from einops import rearrange
-from visualization import gimmi_many_fish
+from visualization import gimmiManyFish
 
 
 # calculate area of fish in image frame
-def get_area(vertices):
+def getArea(vertices):
     x_coord = vertices[:,0]
     y_coord = vertices[:,1]
     x_shifted = np.roll(x_coord, -1)
@@ -16,14 +16,14 @@ def get_area(vertices):
     return abs((0.5)*(a-b))
 
 # return the length of fish in image frame
-def get_length(vertices):
+def getLength(vertices):
     tail = (vertices[4,:] + vertices[5,:]) / 2
     head = vertices[0,:]
     return ((head[0] - tail[0])**2 + (head[1] - tail[1])**2)**0.5
 
 
 # function for helping to calculate the corrsponding length and size of fish given average length and size of fish in image
-def gimmi_a_fish_angled(theta, z_translate, scale):
+def gimmiAFishAngled(theta, z_translate, scale):
     fish_vertices = np.array([[-8.5, 0, 0], [-2.5, 4, 0], [-2.5, -4, 0],  [6.5, 0, 0], [8.5,3,0], [8.5, -3, 0]], dtype=float)
     # scaling
     fish_vertices *= scale
@@ -45,12 +45,13 @@ def gimmi_a_fish_angled(theta, z_translate, scale):
 
 
 def main():
-    # First, note volume of the field of view:
+    # Calculate volume of the field of view (NOTE: formula for frustum)
     S1 = 1.08*1.92/(3.5/20)**2
     S2 = 1.08*1.92/(3.5/320)**2
     h = 300
-    V = (S1 + S2 + (S1*S2)**0.5)*(h/3)
-    # We then calculate the probability weight for each 30cm interval in fov depth
+    V = (S1 + S2 + (S1*S2)**0.5)*(h/3)      
+
+    # Calculate the probability weight for each 30cm interval in fov depth
     weight = []
     for i in range(10):
         s1 = 1.08*1.92/(3.5/(30*i+20))**2
@@ -76,7 +77,6 @@ def main():
     expected_length = []
     scales = np.arange(0.5, 1.6, 0.1)
 
-
     for scale in scales:
         all_area = []
         all_length = []
@@ -85,7 +85,7 @@ def main():
             distance = j*30
             for i in range(10):
                 theta = 2*np.pi*(i*36 / 360)       # rotating fish from 0 to 360 degree
-                vertices = gimmi_a_fish_angled(theta, distance, scale)
+                vertices = gimmiAFishAngled(theta, distance, scale)
                 # project it onto the frame
                 temp = np.ones((len(vertices), 1))
                 vertices = np.hstack((vertices, temp))
@@ -95,24 +95,24 @@ def main():
 
                 # Now we calculate the observations
                 temp = 0
-                temp += get_area(projected[0:3,:])
-                temp += get_area(projected[1:4,:])
-                temp += get_area(projected[3:6,:])
+                temp += getArea(projected[0:3,:])
+                temp += getArea(projected[1:4,:])
+                temp += getArea(projected[3:6,:])
                 all_area.append(temp)
-                all_length.append(get_length(projected)) 
+                all_length.append(getLength(projected)) 
 
         expected_size.append(np.inner(all_area, weight))          
         expected_length.append(np.inner(all_length, weight))
 
     ################################################
-    ### Now we run our simulation
+    ### Run simulation
     ### You can adjust fish scale (from 0.5 to 1.5) here:
     SCALE = 1
     lengths = []
     sizes = []
     
     for _ in range(100):
-        a, _ = gimmi_many_fish(100, SCALE)
+        a, _ = gimmiManyFish(100, SCALE)
         # projecting fishes into image frame:
         temp = np.ones((len(a), 1))
         a = np.hstack((a, temp))
@@ -140,10 +140,10 @@ def main():
         total_size = 0
         total_length = 0
         for vertices in in_frame_vertices:
-            total_size += get_area(vertices[0:3,:])
-            total_size += get_area(vertices[1:4,:])
-            total_size += get_area(vertices[3:6,:])
-            total_length += get_length(vertices)
+            total_size += getArea(vertices[0:3,:])
+            total_size += getArea(vertices[1:4,:])
+            total_size += getArea(vertices[3:6,:])
+            total_length += getLength(vertices)
 
         if num_fish != 0:
             average_size = total_size/num_fish
@@ -165,16 +165,16 @@ def main():
     # Which gives the following estimated fish size:
     fish_vertices = np.array([[-8.5, 0, 0], [-2.5, 4, 0], [-2.5, -4, 0],  [6.5, 0, 0], [8.5,3,0], [8.5, -3, 0]], dtype=float)
     fish_vertices_l = fish_vertices*length_scale
-    length_guess = get_length(fish_vertices_l)
+    length_guess = getLength(fish_vertices_l)
     fish_vertices_s = fish_vertices*size_scale
-    size_guess = get_area(fish_vertices_s[0:3,:]) + get_area(fish_vertices_s[1:4,:]) + get_area(fish_vertices_s[3:6,:])
+    size_guess = getArea(fish_vertices_s[0:3,:]) + getArea(fish_vertices_s[1:4,:]) + getArea(fish_vertices_s[3:6,:])
     
     # meanwhile, the actual size and length are:
     fish_vertices_actual = fish_vertices * SCALE
-    length_actual = get_length(fish_vertices_actual)
-    size_actual = get_area(fish_vertices_actual[0:3,:]) + get_area(fish_vertices_actual[1:4,:]) + get_area(fish_vertices_actual[3:6,:])
+    length_actual = getLength(fish_vertices_actual)
+    size_actual = getArea(fish_vertices_actual[0:3,:]) + getArea(fish_vertices_actual[1:4,:]) + getArea(fish_vertices_actual[3:6,:])
 
-    # Print our guess!
+    # Print our estimations!
     print("****")
     print("Estimated fish length: {0}".format(np.round(length_guess,3)))
     print("Estimated fish size (area): {0}".format(np.round(size_guess,3)))

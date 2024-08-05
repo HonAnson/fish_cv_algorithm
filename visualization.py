@@ -9,7 +9,7 @@ from einops import rearrange
 # Define vertices and triangles for a single fish
 # actual size of the fish: 17cm long * 8 cm height
 
-def gimmi_a_fish(mean_scale = 1):
+def gimmiAFish(mean_scale = 1):
     fish_vertices = np.array([[0, 0, 0], [6, 4, 0], [6, -4, 0],  [15, 0, 0], [17,3,0], [17, -3, 0]], dtype=float)
     fish_faces = np.array([[0, 2, 1], [1, 3, 2], [3, 5, 4], [0, 1, 2], [1, 2, 3], [3, 4, 5]])
 
@@ -36,21 +36,19 @@ def gimmi_a_fish(mean_scale = 1):
     return fish_vertices, fish_faces
 
 
-def gimmi_many_fish(numb, mean_scale = 1):
-    a, b = gimmi_a_fish(mean_scale)
+def gimmiManyFish(numb, mean_scale = 1):
+    a, b = gimmiAFish(mean_scale)
     for i in range(numb-1):
-        vertices, faces = gimmi_a_fish(mean_scale)
+        vertices, faces = gimmiAFish(mean_scale)
         faces = faces + 6*(i+1)
         a = np.vstack((a, vertices))
         b = np.vstack((b, faces))
     return a, b
 
 
-
-
 def main():
     # Create the mesh
-    a, b = gimmi_many_fish(100)
+    a, b = gimmiManyFish(100)
     mesh = trimesh.Trimesh(vertices=a, faces=b, process = False)
 
     # Draw field of view
@@ -128,7 +126,6 @@ def main():
         [1, 0, 0]
     ])
 
-
     # Parameters for the rays
     ray_length = [1.08, 1.08, 1.92, 1.92]
     cylinder_radius = 0.005  # Adjust the radius for desired thickness
@@ -147,7 +144,6 @@ def main():
     # Create the scene with the mesh and ray visualizations
     scene = trimesh.Scene([mesh] + ray_visualizations)
 
-    # scene = trimesh.Scene([mesh] )
     # Display the scene
     scene.show()
 
